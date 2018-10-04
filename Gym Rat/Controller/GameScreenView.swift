@@ -48,15 +48,29 @@ class GameScreenView: UIViewController {
     
     @IBAction func LiftDB(_ sender: UIButton) {
         
+        let weight = user.DBPress.getCurrentWeight()
+        
         if (frenzyActive){
-            user.totalWeightsLifted = user.totalWeightsLifted + (user.DBPress.getCurrentWeight() * 3)
+            user.totalWeightsLifted = user.totalWeightsLifted + (weight * 3)
             user.rank.addTap()
             user.rank.ableForUpgrade()
+            var tapLabel: UILabel!
+            tapLabel.text = "+\(weight * 3)"
+            tapLabel.font = UIFont.boldSystemFont(ofSize: 10)
+            tapLabel.textColor = UIColor.white
+            
+            
+            
+            tapLabel.center = CGPoint(x: 10, y: 10)
+            
+            
+            
         }
         else {
             user.totalWeightsLifted = user.totalWeightsLifted + user.DBPress.getCurrentWeight()
             user.rank.addTap()
             user.rank.ableForUpgrade()
+            
         }
         updateUI()
     }
