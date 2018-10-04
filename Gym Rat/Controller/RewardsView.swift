@@ -10,5 +10,5 @@ import UIKit
 
 class RewardsView : UIViewController {
     
-    
+    var x: Int = 0
 }
