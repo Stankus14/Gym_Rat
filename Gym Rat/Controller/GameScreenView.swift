@@ -41,6 +41,7 @@ class GameScreenView: UIViewController {
         frenzyCounter = 0
         frenzyBar.frame.size.width = 0
         updateUI()
+        levelBar()
         
     }
 
@@ -63,8 +64,11 @@ class GameScreenView: UIViewController {
             tapLabel.textColor = UIColor.white
             
             var randNumX = arc4random_uniform(40) + 30
-            var placeX : Int
-            tapLabel.center = CGPoint(x: Int(randNumX), y: 10)
+            let screenSize = UIScreen.main.bounds
+            let screenWidth = screenSize.width
+            
+            let placeX = UInt32(screenWidth) * randNumX
+            tapLabel.center = CGPoint(x: Int(placeX), y: 10)
             
         }
         else {
