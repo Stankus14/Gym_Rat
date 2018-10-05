@@ -22,6 +22,8 @@ class GymRat {
     let rank : RankSystem
     
     
+    
+    
 
     init() {
         totalWeightsLifted = 0
