@@ -130,9 +130,6 @@ class  StoreView: UIViewController  {
             print("MAXED OUT")
         }
     }
-    
-    
-
     func updateUI () {
         
         //////////////DUMBBELL PRESS/////////////////
@@ -186,7 +183,6 @@ class  StoreView: UIViewController  {
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        
         
         let DestinationController : GameScreenView = segue.destination as! GameScreenView
         DestinationController.user = userStore
