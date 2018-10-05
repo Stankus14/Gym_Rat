@@ -39,6 +39,7 @@ class GameScreenView: UIViewController {
         frenzyCounter = 0
         frenzyBar.frame.size.width = 0
         updateUI()
+        
     }
 
     override func didReceiveMemoryWarning() {
@@ -59,11 +60,9 @@ class GameScreenView: UIViewController {
             tapLabel.font = UIFont.boldSystemFont(ofSize: 10)
             tapLabel.textColor = UIColor.white
             
-            
-            
-            tapLabel.center = CGPoint(x: 10, y: 10)
-            
-            
+            var randNumX = arc4random_uniform(40) + 30
+            var placeX : Int
+            tapLabel.center = CGPoint(x: Int(randNumX), y: 10)
             
         }
         else {
