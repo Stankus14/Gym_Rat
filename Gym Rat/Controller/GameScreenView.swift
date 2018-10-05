@@ -15,7 +15,33 @@ extension Int {
         return numberFormatter.string(from: NSNumber(value:self))!
     }
 }
-
+extension UIColor {
+    public convenience init?(hexString: String) {
+        let r, g, b, a: CGFloat
+        
+        if hexString.hasPrefix("#") {
+            let start = hexString.index(hexString.startIndex, offsetBy: 1)
+            let hexColor = String(hexString[start...])
+            
+            if hexColor.count == 8 {
+                let scanner = Scanner(string: hexColor)
+                var hexNumber: UInt64 = 0
+                
+                if scanner.scanHexInt64(&hexNumber) {
+                    r = CGFloat((hexNumber & 0xff000000) >> 24) / 255
+                    g = CGFloat((hexNumber & 0x00ff0000) >> 16) / 255
+                    b = CGFloat((hexNumber & 0x0000ff00) >> 8) / 255
+                    a = CGFloat(hexNumber & 0x000000ff) / 255
+                    
+                    self.init(red: r, green: g, blue: b, alpha: a)
+                    return
+                }
+            }
+        }
+        
+        return nil
+    }
+}
 class GameScreenView: UIViewController {
     
     var user = GymRat()
@@ -188,8 +214,8 @@ class GameScreenView: UIViewController {
             view.layer.addSublayer(trackLayer)
             
             shapeLayer.path = circularPath.cgPath
-            
-            shapeLayer.strokeColor = UIColor.blue.cgColor
+        let bronze = UIColor(hexString: "#8C7853")
+        shapeLayer.strokeColor = bronze as! CGColor
             shapeLayer.lineWidth = 10
             shapeLayer.fillColor = UIColor.clear.cgColor
             shapeLayer.lineCap = kCALineCapRound
