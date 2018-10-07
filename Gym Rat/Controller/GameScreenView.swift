@@ -16,32 +16,25 @@ extension Int {
     }
 }
 extension UIColor {
-    public convenience init?(hexString: String) {
-        let r, g, b, a: CGFloat
-        
-        if hexString.hasPrefix("#") {
-            let start = hexString.index(hexString.startIndex, offsetBy: 1)
-            let hexColor = String(hexString[start...])
-            
-            if hexColor.count == 8 {
-                let scanner = Scanner(string: hexColor)
-                var hexNumber: UInt64 = 0
-                
-                if scanner.scanHexInt64(&hexNumber) {
-                    r = CGFloat((hexNumber & 0xff000000) >> 24) / 255
-                    g = CGFloat((hexNumber & 0x00ff0000) >> 16) / 255
-                    b = CGFloat((hexNumber & 0x0000ff00) >> 8) / 255
-                    a = CGFloat(hexNumber & 0x000000ff) / 255
-                    
-                    self.init(red: r, green: g, blue: b, alpha: a)
-                    return
-                }
-            }
+    convenience init(hexString: String) {
+        let hex = hexString.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int = UInt32()
+        Scanner(string: hex).scanHexInt32(&int)
+        let a, r, g, b: UInt32
+        switch hex.count {
+        case 3: // RGB (12-bit)
+            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
+        case 6: // RGB (24-bit)
+            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+        case 8: // ARGB (32-bit)
+            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+        default:
+            (a, r, g, b) = (255, 0, 0, 0)
         }
-        
-        return nil
+        self.init(red: CGFloat(r) / 255, green: CGFloat(g) / 255, blue: CGFloat(b) / 255, alpha: CGFloat(a) / 255)
     }
 }
+
 class GameScreenView: UIViewController {
     
     var user = GymRat()
@@ -61,6 +54,9 @@ class GameScreenView: UIViewController {
     @IBOutlet weak var frenzyBar: UIView!
     @IBOutlet weak var exercisesView: UIView!
     
+    let screenSize = UIScreen.main.bounds
+    
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         frenzyCountUpTimer = Timer.scheduledTimer(timeInterval: 0.1, target: self, selector: #selector(GameScreenView.frenzyBarUpdate), userInfo: nil, repeats: true)
@@ -68,6 +64,7 @@ class GameScreenView: UIViewController {
         frenzyBar.frame.size.width = 0
         updateUI()
         levelBar()
+        
         
     }
 
@@ -84,24 +81,14 @@ class GameScreenView: UIViewController {
             user.totalWeightsLifted = user.totalWeightsLifted + (weight * 3)
             user.rank.addTap()
             user.rank.ableForUpgrade()
-            var tapLabel: UILabel!
-            tapLabel.text = "+\(weight * 3)"
-            tapLabel.font = UIFont.boldSystemFont(ofSize: 10)
-            tapLabel.textColor = UIColor.white
-            
-            var randNumX = arc4random_uniform(40) + 30
-            let screenSize = UIScreen.main.bounds
-            let screenWidth = screenSize.width
-            
-            let placeX = UInt32(screenWidth) * randNumX
-            tapLabel.center = CGPoint(x: Int(placeX), y: 10)
-            
+            addTapLabel()
         }
         else {
             user.totalWeightsLifted = user.totalWeightsLifted + user.DBPress.getCurrentWeight()
             user.rank.addTap()
             user.rank.ableForUpgrade()
-            
+            addTapLabel()
+            //shapeLayer.strokeEnd = CGFloat(user.rank.tapCount / 8000)
         }
         updateUI()
     }
@@ -173,30 +160,30 @@ class GameScreenView: UIViewController {
     @objc func frenzyBarUpdate () {
         frenzyCounter += 1
         
-        if (frenzyCounter == 200) {
-            frenzyBar.frame.size.width = ((view.frame.size.width - 62) / 200) * CGFloat(frenzyCounter)
+        if (frenzyCounter == 400) {
+            frenzyBar.frame.size.width = ((view.frame.size.width - 62) / 400) * CGFloat(frenzyCounter)
             frenzyBar.backgroundColor = UIColor.cyan
             frenzyCountUpTimer.invalidate()
             frenzyActive = true
             frenzyCountDownTimer = Timer.scheduledTimer(timeInterval: 0.1, target: self, selector: #selector(GameScreenView.frenzyBarDownUpdate), userInfo: nil, repeats: true)
         }
         else {
-            frenzyBar.frame.size.width = ((view.frame.size.width - 62) / 200) * CGFloat(frenzyCounter)
+            frenzyBar.frame.size.width = ((view.frame.size.width - 62) / 400) * CGFloat(frenzyCounter)
         }
     }
     
     @objc func frenzyBarDownUpdate() {
-        frenzyCounter -= 20
+        frenzyCounter -= 10
         
         if (frenzyCounter == 0) {
-            frenzyBar.frame.size.width = ((view.frame.size.width - 62) / 200) * CGFloat(frenzyCounter)
+            frenzyBar.frame.size.width = ((view.frame.size.width - 62) / 400) * CGFloat(frenzyCounter)
             frenzyBar.backgroundColor = UIColor.white
             frenzyCountDownTimer.invalidate()
             frenzyActive = false
             frenzyCountUpTimer = Timer.scheduledTimer(timeInterval: 0.1, target: self, selector: #selector(GameScreenView.frenzyBarUpdate), userInfo: nil, repeats: true)
         }
         else {
-            frenzyBar.frame.size.width = ((view.frame.size.width - 62) / 200) * CGFloat(frenzyCounter)
+            frenzyBar.frame.size.width = ((view.frame.size.width - 62) / 400) * CGFloat(frenzyCounter)
         }
     }
     
@@ -204,8 +191,13 @@ class GameScreenView: UIViewController {
         
         
             // Do any additional setup after loading the view, typically from a nib.
-            let center = view.center
-            let circularPath = UIBezierPath(arcCenter: center, radius: 100, startAngle: -CGFloat.pi / 2, endAngle: 2 * CGFloat.pi, clockwise: true)
+        let screenWidth = screenSize.width
+        let screenHeight = screenSize.height
+        var center = view.center
+        center.x = screenWidth * (11 / 100)
+        center.y = screenHeight * (9 / 100)
+        
+            let circularPath = UIBezierPath(arcCenter: center, radius: 30, startAngle: -CGFloat.pi / 2, endAngle: 2 * CGFloat.pi, clockwise: true)
             trackLayer.path = circularPath.cgPath
             trackLayer.strokeColor = UIColor.lightGray.cgColor
             trackLayer.lineWidth = 10
@@ -214,21 +206,20 @@ class GameScreenView: UIViewController {
             view.layer.addSublayer(trackLayer)
             
             shapeLayer.path = circularPath.cgPath
-        let bronze = UIColor(hexString: "#8C7853")
-        shapeLayer.strokeColor = bronze as! CGColor
+            shapeLayer.strokeColor = UIColor(hexString: "#8C7853").cgColor
             shapeLayer.lineWidth = 10
             shapeLayer.fillColor = UIColor.clear.cgColor
             shapeLayer.lineCap = kCALineCapRound
             shapeLayer.strokeEnd = 0
             view.layer.addSublayer(shapeLayer)
+        
             
-            view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleTap)))
+            //view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleTap)))
         }
         
         
         @objc private func handleTap()
         {
-            print("attempting to animate stroke")
             
             let basicAnimation = CABasicAnimation(keyPath: "strokeEnd")
             
@@ -241,6 +232,39 @@ class GameScreenView: UIViewController {
             
             shapeLayer.add(basicAnimation, forKey: "hellyeah")
         }
+    func addTapLabel() {
+        var center = view.center
+        let weight = user.DBPress.getCurrentWeight()
+        
+        let screenWidth = screenSize.width
+        let screenHeight = screenSize.height
+        
+        let tapLabel: UILabel = UILabel(frame: CGRect(x: 10, y: 10, width: 100, height: 50))
+        if frenzyActive {
+            tapLabel.text = "+\(weight * 3)"
+            tapLabel.textColor = UIColor.cyan
+        }
+        else{
+            tapLabel.text = "+\(weight)"
+            tapLabel.textColor = UIColor.white
+        }
+        tapLabel.font = UIFont.boldSystemFont(ofSize: 25)
+        var rand = CGFloat.random(in: 25 ... 75)
+        let posX = screenWidth * (rand / 100)
+        rand = CGFloat.random(in: 40 ... 75)
+        let posY = screenHeight * (rand / 100)
+        center.x = posX
+        center.y = posY
+        
+        tapLabel.center = center
+        self.view.addSubview(tapLabel)
+        
+        UIView.animate(withDuration: 1.0, delay: 0, options: [.curveLinear], animations: {
+            tapLabel.center.y = tapLabel.center.y - 40
+            tapLabel.alpha = 0
+        }
+            ,completion: nil)
+    }
     
 
 //////////////////////////////////////////
